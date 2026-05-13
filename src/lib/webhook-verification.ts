@@ -129,7 +129,7 @@ export class WebhookHandler {
           source,
           request.url || 'unknown',
           { error: 'Missing verification headers' },
-          request.ip || 'unknown',
+          'unknown', // IP address not available in NextRequest
           false
         )
         return { verified: false, source }
@@ -142,7 +142,7 @@ export class WebhookHandler {
           source,
           request.url || 'unknown',
           { error: 'Invalid timestamp' },
-          request.ip || 'unknown',
+          'unknown', // IP address not available in NextRequest
           false
         )
         return { verified: false, source }
@@ -155,7 +155,7 @@ export class WebhookHandler {
         source,
         request.url || 'unknown',
         { body_preview: body.substring(0, 100) },
-        request.ip || 'unknown',
+        'unknown', // IP address not available in NextRequest
         signatureValid
       )
 
@@ -166,7 +166,7 @@ export class WebhookHandler {
         'unknown',
         request.url || 'unknown',
         { error: error.message },
-        request.ip || 'unknown',
+        'unknown', // IP address not available in NextRequest
         false
       )
       return { verified: false, source: 'unknown' }
@@ -199,7 +199,7 @@ export class WebhookHandler {
       await SecurityLogger.logSecurityViolation(
         'webhook_processing_error',
         { error: error.message, source },
-        request.ip || 'unknown',
+        'unknown', // IP address not available in NextRequest
         'high'
       )
       

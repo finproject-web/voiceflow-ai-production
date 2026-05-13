@@ -1,4 +1,4 @@
-import { createServerClient } from '@supabase/supabase-js'
+import { createClient } from '@/utils/supabase/server'
 import { Database } from './supabase'
 
 interface SecurityLogEntry {
@@ -172,6 +172,34 @@ class SecurityLogger {
     })
 
     return true
+  }
+
+  // Log webhook events
+  static async logWebhookEvent(
+    source: string,
+    eventType: string,
+    data: any,
+    severity: 'low' | 'medium' | 'high' | 'critical' = 'medium'
+  ) {
+    try {
+      const entry: SecurityLogEntry = {
+        event_type: 'webhook_received',
+        ip_address: 'unknown',
+        user_agent: source,
+        endpoint: `/webhooks/${source}`,
+        details: {
+          event_type: eventType,
+          data: data
+        },
+        severity,
+        timestamp: new Date().toISOString()
+      }
+
+      // Store in memory (in production, this would go to database)
+      console.log('Webhook Event Logged:', entry)
+    } catch (error) {
+      console.error('Error logging webhook event:', error)
+    }
   }
 
   // Clean up expired rate limit entries

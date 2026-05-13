@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/utils/supabase/server'
-import { cookies } from 'next/headers'
 
 // GET /api/leads/[id] - Get lead details
 export async function GET(
@@ -12,8 +11,7 @@ export async function GET(
     const { id } = await params
     
     // Create Supabase client
-    const cookieStore = await cookies()
-    const supabase = createClient(cookieStore)
+    const supabase = await createClient()
     
     // Verify authentication
     const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -61,8 +59,7 @@ export async function PUT(
     const { id } = await params
     
     // Create Supabase client
-    const cookieStore = await cookies()
-    const supabase = createClient(cookieStore)
+    const supabase = await createClient()
     
     // Verify authentication
     const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -115,8 +112,7 @@ export async function DELETE(
     const { id } = await params
     
     // Create Supabase client
-    const cookieStore = await cookies()
-    const supabase = createClient(cookieStore)
+    const supabase = await createClient()
     
     // Verify authentication
     const { data: { user }, error: authError } = await supabase.auth.getUser()

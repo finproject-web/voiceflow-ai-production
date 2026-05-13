@@ -74,10 +74,15 @@ export interface CallStatus {
 }
 
 class TelephonyService {
-  private static supabase = createServerClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
+  private static supabase: any = null;
+
+  private static async getSupabase() {
+    if (!this.supabase) {
+      const { createClient } = await import('@/utils/supabase/server');
+      this.supabase = await createClient();
+    }
+    return this.supabase;
+  }
 
   // 1. Outbound AI Calling with Vapi
   static async initiateAICall(request: CallRequest): Promise<{ callId: string; vapiCallId: string }> {
@@ -93,7 +98,8 @@ class TelephonyService {
       )
 
       // Create call record in database
-      const { data: callRecord, error: callError } = await this.supabase
+      const supabase = await this.getSupabase();
+      const { data: callRecord, error: callError } = await supabase
         .from('calls')
         .insert({
           lead_id: request.leadId,
@@ -158,7 +164,7 @@ class TelephonyService {
       const vapiData = await vapiResponse.json()
 
       // Update call record with Vapi call ID
-      await this.supabase
+      await supabase
         .from('calls')
         .update({
           vapi_call_id: vapiData.id,
@@ -527,7 +533,6 @@ class TelephonyService {
         'vapi',
         type,
         { callId: call.id },
-        'server',
         'success'
       )
     } catch (error) {
@@ -735,4 +740,4 @@ class TelephonyService {
   }
 }
 
-export { TelephonyService, type CallRequest, type SMSRequest, type CallTransferRequest, type CallStatus }
+export { TelephonyService }
