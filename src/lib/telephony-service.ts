@@ -1,4 +1,4 @@
-import { createServerClient } from '@supabase/supabase-js'
+import { createClient } from '@/utils/supabase/server'
 import { SecurityLogger } from './security-logging'
 import { Database } from './supabase'
 

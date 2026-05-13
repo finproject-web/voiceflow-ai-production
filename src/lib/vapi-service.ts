@@ -97,8 +97,7 @@ export class VapiService {
 
   async updateCallInDatabase(callId: string, status: string, outcome?: string, duration?: number) {
     try {
-      const cookieStore = await cookies()
-      const supabase = createClient(cookieStore)
+      const supabase = await createClient()
 
       const updateData: any = {
         status,
@@ -131,8 +130,7 @@ export class VapiService {
 
   async processCallWebhook(callData: any) {
     try {
-      const cookieStore = await cookies()
-      const supabase = createClient(cookieStore)
+      const supabase = await createClient()
 
       // Find the call in our database
       const { data: call, error: callError } = await supabase
