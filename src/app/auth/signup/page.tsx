@@ -39,6 +39,12 @@ export default function SignupPage() {
     return Object.keys(newErrors).length === 0
   }
 
+  const generateUniqueSlug = (businessName: string): string => {
+      const baseSlug = businessName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
+      const timestamp = Date.now().toString().slice(-6)
+      return `${baseSlug}-${timestamp}`
+    }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
@@ -48,17 +54,24 @@ export default function SignupPage() {
     
     try {
       const supabase = createClient()
+      
+      // Generate unique slug to avoid conflicts
+      const uniqueSlug = generateUniqueSlug(formData.businessName)
+      
       // Create organization first
       const { data: orgData, error: orgError } = await supabase
         .from('organizations')
         .insert({
           name: formData.businessName,
-          slug: formData.businessName.toLowerCase().replace(/\s+/g, '-'),
+          slug: uniqueSlug,
         })
         .select()
         .single()
 
-      if (orgError) throw orgError
+      if (orgError) {
+        console.error("Organization creation error:", orgError)
+        throw new Error(`Failed to create organization: ${orgError.message}`)
+      }
 
       // Create user with organization
       const { data: userData, error: userError } = await supabase.auth.signUp({
@@ -73,16 +86,21 @@ export default function SignupPage() {
         }
       })
 
-      if (userError) throw userError
+      if (userError) {
+        console.error("User creation error:", userError)
+        throw new Error(`Failed to create user: ${userError.message}`)
+      }
 
       console.log("Signup successful:", { userData, orgData })
       
-      // Redirect to dashboard
-      window.location.href = '/dashboard'
+      // Show success message and redirect
+      alert("Account created successfully! Please check your email to verify your account.")
+      window.location.href = '/auth/login'
       
     } catch (error) {
       console.error("Signup error:", error)
-      setErrors({ general: error.message })
+      const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred during signup"
+      setErrors({ general: errorMessage })
     } finally {
       setIsLoading(false)
     }
