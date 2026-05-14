@@ -5,12 +5,12 @@ export async function middleware(request: NextRequest) {
   const { supabase, response } = createClient(request);
   
   const {
-    data: { session },
-  } = await supabase.auth.getSession();
+    data: { user },
+  } = await supabase.auth.getUser();
 
   // Protected routes
   if (request.nextUrl.pathname.startsWith('/dashboard')) {
-    if (!session) {
+    if (!user) {
       // Redirect to login if accessing protected route without session
       const loginUrl = new URL('/auth/login', request.url);
       return NextResponse.redirect(loginUrl);
@@ -18,7 +18,7 @@ export async function middleware(request: NextRequest) {
   }
 
   // Redirect authenticated users away from auth pages
-  if (request.nextUrl.pathname.startsWith('/auth') && session) {
+  if (request.nextUrl.pathname.startsWith('/auth') && user) {
     const dashboardUrl = new URL('/dashboard', request.url);
     return NextResponse.redirect(dashboardUrl);
   }

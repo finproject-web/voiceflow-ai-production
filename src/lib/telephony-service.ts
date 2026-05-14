@@ -1,6 +1,10 @@
 import { createClient } from '@/utils/supabase/server'
 import { SecurityLogger } from './security-logging'
 import { Database } from './supabase'
+import {
+  verifyVapiWebhookFromHeaders,
+  verifyTwilioSignaturePayload,
+} from '@/lib/webhook-verification'
 
 export interface CallRequest {
   leadId: string
@@ -533,13 +537,16 @@ class TelephonyService {
         'vapi',
         type,
         { callId: call.id },
-        'success'
+        'low'
       )
     } catch (error) {
       console.error('Error handling Vapi webhook:', error)
       await SecurityLogger.logSecurityViolation(
         'vapi_webhook_error',
-        { error: error.message, event },
+        {
+          error: error instanceof Error ? error.message : String(error),
+          eventType: event?.type,
+        },
         'server',
         'high'
       )
@@ -651,8 +658,7 @@ class TelephonyService {
       let isValid = false
 
       if (provider === 'vapi') {
-        // Verify Vapi webhook signature
-        isValid = await this.verifyVapiWebhook(signature, payload)
+        isValid = await this.verifyVapiWebhook(signature, payload, headers)
       } else if (provider === 'twilio') {
         // Verify Twilio webhook signature
         isValid = await this.verifyTwilioWebhook(signature, payload, headers)
@@ -661,7 +667,7 @@ class TelephonyService {
       if (!isValid) {
         await SecurityLogger.logSecurityViolation(
           'webhook_verification_failed',
-          { provider, signature, headers },
+          { provider },
           'server',
           'high'
         )
@@ -679,10 +685,11 @@ class TelephonyService {
 
       return true
     } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
       console.error('Error processing webhook:', error)
       await SecurityLogger.logSecurityViolation(
         'webhook_processing_error',
-        { provider, error: error.message },
+        { provider, error: message },
         'server',
         'high'
       )
@@ -691,23 +698,42 @@ class TelephonyService {
   }
 
   // Helper methods
-  private static async verifyVapiWebhook(signature: string, payload: string): Promise<boolean> {
-    // Implement Vapi webhook verification
-    const expectedSignature = Buffer.from(signature).toString('base64')
-    return expectedSignature === signature // Simplified verification
+  private static headersFromRecord(headers: Record<string, string>): Headers {
+    const h = new Headers()
+    for (const [k, v] of Object.entries(headers)) {
+      if (typeof v === 'string') h.set(k, v)
+    }
+    return h
   }
 
-  private static async verifyTwilioWebhook(signature: string, payload: string, headers: Record<string, string>): Promise<boolean> {
-    // Implement Twilio webhook verification using their SDK
-    const twilio = require('twilio')
-    const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN)
-    
-    return client.validateRequest(
-      process.env.TWILIO_AUTH_TOKEN!,
-      signature,
-      `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/webhooks/twilio`,
-      Buffer.from(payload)
+  private static async verifyVapiWebhook(
+    signature: string,
+    payload: string,
+    headers: Record<string, string>
+  ): Promise<boolean> {
+    const h = TelephonyService.headersFromRecord(headers)
+    if (signature && !h.has('x-vapi-signature') && !h.has('X-Vapi-Signature')) {
+      h.set('x-vapi-signature', signature)
+    }
+    return verifyVapiWebhookFromHeaders(h, payload).ok
+  }
+
+  private static async verifyTwilioWebhook(
+    signature: string,
+    payload: string,
+    headers: Record<string, string>
+  ): Promise<boolean> {
+    const validationUrl =
+      process.env.TWILIO_WEBHOOK_VALIDATION_URL?.trim() ||
+      headers['x-twilio-webhook-url'] ||
+      ''
+    const r = verifyTwilioSignaturePayload(
+      process.env.TWILIO_AUTH_TOKEN,
+      signature || headers['x-twilio-signature'] || null,
+      validationUrl,
+      payload
     )
+    return r.ok
   }
 
   private static async handleTwilioWebhook(event: any): Promise<void> {

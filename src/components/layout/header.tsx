@@ -11,6 +11,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { LogOut, Settings, User } from "lucide-react"
+import { createClient } from "@/utils/supabase/client"
+import { useRouter } from "next/navigation"
 
 interface HeaderProps {
   user?: {
@@ -18,12 +20,17 @@ interface HeaderProps {
     name?: string
     avatar_url?: string
   }
+  children?: React.ReactNode
 }
 
-export function Header({ user }: HeaderProps) {
+export function Header({ user, children }: HeaderProps) {
+  const router = useRouter()
+
   const handleSignOut = async () => {
-    // Will implement sign out logic
-    console.log("Sign out")
+    const supabase = createClient()
+    await supabase.auth.signOut()
+    router.replace("/auth/login")
+    router.refresh()
   }
 
   return (
@@ -31,6 +38,7 @@ export function Header({ user }: HeaderProps) {
       <div className="container flex h-16 items-center space-x-4 sm:justify-between sm:space-x-0">
         <div className="flex flex-1 items-center justify-end space-x-4">
           <nav className="flex items-center space-x-2">
+            {children}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-8 w-8 rounded-full">

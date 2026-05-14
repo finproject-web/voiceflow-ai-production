@@ -1,35 +1,15 @@
 "use server"
 
-import { createClient } from '@supabase/supabase-js'
-import { cookies } from 'next/headers'
+import { createClient } from '@/utils/supabase/server'
 import { Database } from './supabase'
 
-// Create a Supabase client for server-side operations
-function createServerClient() {
-  const cookieStore = cookies()
-  
-  return createClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get(name: string) {
-          return cookieStore.get(name)?.value
-        },
-        set(name: string, value: string, options: any) {
-          cookieStore.set({ name, value, ...options })
-        },
-        remove(name: string, options: any) {
-          cookieStore.set({ name, value: '', ...options })
-        },
-      },
-    }
-  )
+async function getSupabase() {
+  return createClient()
 }
 
 // Get authenticated user with organization context
 export async function getAuthenticatedUser() {
-  const supabase = createServerClient()
+  const supabase = await getSupabase()
   
   const { data: { user }, error } = await supabase.auth.getUser()
   
@@ -38,13 +18,13 @@ export async function getAuthenticatedUser() {
   }
   
   // Get user's organization details
-  const { data: profile } = await supabase
+  const { data: profile, error: profileError } = await supabase
     .from('users')
     .select('organization_id, business_name')
     .eq('id', user.id)
     .single()
   
-  if (!profile) {
+  if (profileError || !profile) {
     return null
   }
   
@@ -63,7 +43,7 @@ export async function createSecureQuery() {
     throw new Error('Unauthorized: No authenticated user found')
   }
   
-  const supabase = createServerClient()
+  const supabase = await getSupabase()
   
   return {
     supabase,
@@ -225,7 +205,7 @@ export async function getBillingInfo() {
 
 // Organization creation for new users
 export async function createOrganization(name: string, userId: string) {
-  const supabase = createServerClient()
+  const supabase = await getSupabase()
   
   // Create organization
   const { data: org, error: orgError } = await supabase
