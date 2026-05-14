@@ -2,25 +2,7 @@
 
 import { Sidebar } from "./sidebar"
 import { Header } from "./header"
-import { useState, useEffect } from "react"
-import Link from "next/link"
-import { usePathname } from "next/navigation"
-import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
 import { NotificationCenter } from "@/components/notification-center"
-import { 
-  Home, 
-  Users, 
-  Phone, 
-  BarChart3, 
-  CreditCard, 
-  Settings, 
-  Menu,
-  LogOut,
-  User
-} from "lucide-react"
-import { createSupabaseClient } from '@/lib/supabase'
-import { useRouter } from 'next/navigation'
 
 interface DashboardLayoutProps {
   children: React.ReactNode

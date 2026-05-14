@@ -533,7 +533,7 @@ class TelephonyService {
         'vapi',
         type,
         { callId: call.id },
-        'success'
+        'low'
       )
     } catch (error) {
       console.error('Error handling Vapi webhook:', error)

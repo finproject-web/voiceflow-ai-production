@@ -1,4 +1,4 @@
-import { createClient } from '@/utils/supabase/server'
+import { createClient } from '@supabase/supabase-js'
 import { Database } from './supabase'
 
 interface SecurityLogEntry {
@@ -20,7 +20,7 @@ interface RateLimitEntry {
 }
 
 class SecurityLogger {
-  private static supabase = createServerClient<Database>(
+  private static supabase = createClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   )

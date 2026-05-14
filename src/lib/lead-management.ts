@@ -1,4 +1,5 @@
-import { createClient } from '@/utils/supabase/server'
+import { createClient } from '@supabase/supabase-js'
+import type { Database } from './supabase'
 
 export type LeadStatus = 
   | 'new_lead' 
@@ -48,7 +49,7 @@ export interface LeadWithDetails {
 }
 
 class LeadManagementService {
-  private static supabase = createServerClient<Database>(
+  private static supabase = createClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   )
@@ -86,7 +87,7 @@ class LeadManagementService {
     // Apply filters
     if (filters.search) {
       query = query.or(
-        `name.ilike.%${filters.search}%,phone.ilike.%${filters.search}%,assigned_agent.ilike.%${filters.search}%`
+        `first_name.ilike.%${filters.search}%,last_name.ilike.%${filters.search}%,phone.ilike.%${filters.search}%,email.ilike.%${filters.search}%`
       )
     }
 
@@ -110,10 +111,6 @@ class LeadManagementService {
       query = query.lte('loan_amount', filters.loanAmountMax)
     }
 
-    if (filters.assignedAgent) {
-      query = query.eq('assigned_agent', filters.assignedAgent)
-    }
-
     // Get total count
     const { count } = await query
     const total = count || 0
@@ -128,7 +125,7 @@ class LeadManagementService {
       throw new Error(`Failed to fetch leads: ${error.message}`)
     }
 
-    return { leads: leads || [], total }
+    return { leads: (leads || []) as unknown as LeadWithDetails[], total }
   }
 
   // Update lead status with pipeline tracking
@@ -159,7 +156,7 @@ class LeadManagementService {
     // Log status change
     await this.logStatusChange(leadId, organizationId, newStatus, notes)
 
-    return lead!
+    return lead! as unknown as LeadWithDetails
   }
 
   // Get lead details with full history
@@ -193,7 +190,7 @@ class LeadManagementService {
       throw new Error(`Failed to fetch lead details: ${error.message}`)
     }
 
-    return lead
+    return lead as unknown as LeadWithDetails | null
   }
 
   // Get calls for a specific lead
@@ -263,11 +260,11 @@ class LeadManagementService {
 
     const csvRows = leads.map(lead => [
       lead.id,
-      lead.name,
+      `${lead.first_name} ${lead.last_name}`.trim(),
       lead.phone,
       lead.status,
       lead.loan_amount,
-      lead.assigned_agent,
+      '',
       lead.created_at,
       lead.updated_at,
       lead.notes || ''
@@ -294,7 +291,7 @@ class LeadManagementService {
       .select('*')
       .eq('organization_id', organizationId)
       .or(
-        `name.ilike.%${searchTerm}%,phone.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%,notes.ilike.%${searchTerm}%`
+        `first_name.ilike.%${searchTerm}%,last_name.ilike.%${searchTerm}%,phone.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%,notes.ilike.%${searchTerm}%`
       )
       .limit(limit)
       .order('created_at', { ascending: false })
@@ -303,7 +300,7 @@ class LeadManagementService {
       throw new Error(`Failed to search leads: ${error.message}`)
     }
 
-    return leads || []
+    return (leads || []) as unknown as LeadWithDetails[]
   }
 
   // Get pipeline statistics
@@ -359,4 +356,4 @@ class LeadManagementService {
   }
 }
 
-export { LeadManagementService, type LeadStatus, type LeadFilters, type LeadWithDetails }
+export { LeadManagementService }

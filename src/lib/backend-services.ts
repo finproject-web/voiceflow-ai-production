@@ -1,4 +1,5 @@
-import { createServerClient } from '@supabase/supabase-js'
+import { createClient } from '@supabase/supabase-js'
+import { randomUUID } from 'node:crypto'
 import { Database } from './supabase'
 
 // Service interfaces - abstracted from provider names
@@ -262,7 +263,7 @@ export class BackendService {
 
   // Database operations with service integration
   static async createAndCallLead(leadData: any, organizationId: string) {
-    const supabase = createServerClient<Database>(
+    const supabase = createClient<Database>(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     )
@@ -279,6 +280,7 @@ export class BackendService {
         .single()
 
       if (leadError) throw leadError
+      if (!lead) throw new Error('Lead insert returned no row')
 
       // Initiate voice call
       const callResult = await this.initiateCall(
@@ -291,10 +293,11 @@ export class BackendService {
       const { data: call, error: callError } = await supabase
         .from('calls')
         .insert({
+          id: randomUUID(),
           lead_id: lead.id,
           organization_id: organizationId,
           duration: 0,
-          outcome: 'in_progress',
+          outcome: 'not_connected',
           status: 'in_progress',
           timestamp: new Date().toISOString(),
           external_call_id: callResult.id

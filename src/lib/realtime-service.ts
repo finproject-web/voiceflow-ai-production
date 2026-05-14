@@ -249,7 +249,7 @@ export function useRealtime(organizationId: string, eventTypes: RealtimeEvent['t
 }
 
 // React hook for notifications
-export function useNotifications(organizationId: string) {
+export function useNotifications(organizationId?: string) {
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
 

@@ -81,7 +81,7 @@ const formatTimeAgo = (timestamp: string) => {
 }
 
 interface NotificationCenterProps {
-  organizationId: string
+  organizationId?: string
 }
 
 export function NotificationCenter({ organizationId }: NotificationCenterProps) {

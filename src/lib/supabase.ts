@@ -41,27 +41,96 @@ export type Database = {
           created_at?: string
           updated_at?: string
         }
+        Relationships: []
+      }
+      organizations: {
+        Row: {
+          id: string
+          name: string
+          slug: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          slug: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          slug?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       leads: {
         Row: {
           id: string
           organization_id: string
           name: string
+          first_name: string
+          last_name: string
+          email?: string | null
           phone: string
-          status: 'new' | 'contacted' | 'qualified' | 'converted' | 'lost'
+          status:
+            | 'new'
+            | 'contacted'
+            | 'qualified'
+            | 'converted'
+            | 'lost'
+            | 'new_lead'
+            | 'called'
+            | 'interested'
+            | 'application_sent'
+            | 'application_completed'
+            | 'transferred'
+            | 'approved'
+            | 'rejected'
           loan_amount: number
           assigned_agent: string
+          notes?: string | null
+          application_status?: Record<string, unknown> | null
+          property_address?: string | null
+          property_value?: number | null
+          credit_score?: number | null
+          income?: number | null
           created_at: string
           updated_at: string
         }
         Insert: {
-          id: string
+          id?: string
           organization_id: string
-          name: string
+          name?: string
+          first_name?: string
+          last_name?: string
+          email?: string | null
           phone: string
-          status?: 'new' | 'contacted' | 'qualified' | 'converted' | 'lost'
+          status?:
+            | 'new'
+            | 'contacted'
+            | 'qualified'
+            | 'converted'
+            | 'lost'
+            | 'new_lead'
+            | 'called'
+            | 'interested'
+            | 'application_sent'
+            | 'application_completed'
+            | 'transferred'
+            | 'approved'
+            | 'rejected'
           loan_amount: number
-          assigned_agent: string
+          assigned_agent?: string
+          notes?: string | null
+          application_status?: Record<string, unknown> | null
+          property_address?: string | null
+          property_value?: number | null
+          credit_score?: number | null
+          income?: number | null
           created_at?: string
           updated_at?: string
         }
@@ -69,13 +138,36 @@ export type Database = {
           id?: string
           organization_id?: string
           name?: string
+          first_name?: string
+          last_name?: string
+          email?: string | null
           phone?: string
-          status?: 'new' | 'contacted' | 'qualified' | 'converted' | 'lost'
+          status?:
+            | 'new'
+            | 'contacted'
+            | 'qualified'
+            | 'converted'
+            | 'lost'
+            | 'new_lead'
+            | 'called'
+            | 'interested'
+            | 'application_sent'
+            | 'application_completed'
+            | 'transferred'
+            | 'approved'
+            | 'rejected'
           loan_amount?: number
           assigned_agent?: string
+          notes?: string | null
+          application_status?: Record<string, unknown> | null
+          property_address?: string | null
+          property_value?: number | null
+          credit_score?: number | null
+          income?: number | null
           created_at?: string
           updated_at?: string
         }
+        Relationships: []
       }
       calls: {
         Row: {
@@ -88,6 +180,7 @@ export type Database = {
           status: 'completed' | 'in_progress' | 'scheduled'
           transcript: string | null
           timestamp: string
+          external_call_id?: string | null
           created_at: string
           updated_at: string
         }
@@ -101,6 +194,7 @@ export type Database = {
           status?: 'completed' | 'in_progress' | 'scheduled'
           transcript?: string | null
           timestamp: string
+          external_call_id?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -114,9 +208,11 @@ export type Database = {
           status?: 'completed' | 'in_progress' | 'scheduled'
           transcript?: string | null
           timestamp?: string
+          external_call_id?: string | null
           created_at?: string
           updated_at?: string
         }
+        Relationships: []
       }
       recordings: {
         Row: {
@@ -149,6 +245,7 @@ export type Database = {
           duration?: number
           created_at?: string
         }
+        Relationships: []
       }
       campaigns: {
         Row: {
@@ -187,6 +284,7 @@ export type Database = {
           created_at?: string
           updated_at?: string
         }
+        Relationships: []
       }
       billing: {
         Row: {
@@ -222,7 +320,82 @@ export type Database = {
           created_at?: string
           updated_at?: string
         }
+        Relationships: []
+      }
+      security_logs: {
+        Row: {
+          id: string
+          event_type: string
+          user_id?: string | null
+          organization_id?: string | null
+          ip_address?: string | null
+          user_agent?: string | null
+          endpoint?: string | null
+          details?: Record<string, unknown> | null
+          severity: string
+          timestamp: string
+        }
+        Insert: {
+          id?: string
+          event_type: string
+          user_id?: string | null
+          organization_id?: string | null
+          ip_address?: string | null
+          user_agent?: string | null
+          endpoint?: string | null
+          details?: Record<string, unknown> | null
+          severity: string
+          timestamp?: string
+        }
+        Update: {
+          id?: string
+          event_type?: string
+          user_id?: string | null
+          organization_id?: string | null
+          ip_address?: string | null
+          user_agent?: string | null
+          endpoint?: string | null
+          details?: Record<string, unknown> | null
+          severity?: string
+          timestamp?: string
+        }
+        Relationships: []
+      }
+      lead_status_logs: {
+        Row: {
+          id: string
+          lead_id: string
+          organization_id: string
+          old_status: string | null
+          new_status: string
+          notes: string | null
+          changed_by: string
+          changed_at: string
+        }
+        Insert: {
+          id?: string
+          lead_id: string
+          organization_id: string
+          old_status?: string | null
+          new_status: string
+          notes?: string | null
+          changed_by: string
+          changed_at?: string
+        }
+        Update: {
+          id?: string
+          lead_id?: string
+          organization_id?: string
+          old_status?: string | null
+          new_status?: string
+          notes?: string | null
+          changed_by?: string
+          changed_at?: string
+        }
+        Relationships: []
       }
     }
+    Views: Record<string, never>
+    Functions: Record<string, never>
   }
 }
