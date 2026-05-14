@@ -1,33 +1,32 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
+import {
+  verifyTwilioWebhookRequest,
+  logWebhookVerificationFailure,
+} from '@/lib/webhook-verification'
 
 // POST /api/webhooks/twilio/sms - Handle Twilio SMS webhooks
 export async function POST(request: NextRequest) {
+  const body = await request.text()
+
+  const v = verifyTwilioWebhookRequest(request, body)
+  if (!v.ok) {
+    await logWebhookVerificationFailure('twilio-sms', request, v.reason, false)
+    return new Response('Unauthorized', { status: 401 })
+  }
+
   try {
-    // Get request body
-    const body = await request.text()
-    
-    // Parse form data
     const formData = new URLSearchParams(body)
     const messageSid = formData.get('MessageSid')
     const messageStatus = formData.get('MessageStatus')
-    const from = formData.get('From')
-    const to = formData.get('To')
-    const messageBody = formData.get('Body')
 
-    console.log('Twilio SMS webhook received:', {
-      messageSid,
-      messageStatus,
-      from,
-      to,
-      messageBody
-    })
+    if (process.env.NODE_ENV !== 'production') {
+      console.info('Twilio SMS webhook received:', { messageSid, messageStatus })
+    }
 
-    // For now, just acknowledge the webhook
-    // In production, this would update the database with SMS status
     return new Response('', { status: 200 })
-
   } catch (error) {
-    console.error('Twilio SMS webhook error:', error)
+    const message = error instanceof Error ? error.message : String(error)
+    console.error('Twilio SMS webhook error:', message)
     return new Response('Webhook processing failed', { status: 500 })
   }
 }
