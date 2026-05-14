@@ -123,173 +123,82 @@ export default function LeadsPage() {
   }
 
   const handleCSVUpload = (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const file = e.target.files?.[0]
+  e: React.ChangeEvent<HTMLInputElement>
+) => {
+  const file = e.target.files?.[0]
 
-    if (!file) return
+  if (!file) return
 
-    if (!file.name.endsWith('.csv')) {
-      alert('Please upload a CSV file')
+  if (!file.name.toLowerCase().endsWith('.csv')) {
+    alert('Please upload a valid CSV file')
+    return
+  }
+
+  const reader = new FileReader()
+
+  reader.onload = (event) => {
+    const text = event.target?.result as string
+
+    if (!text) {
+      alert('CSV file is empty')
       return
     }
 
-    const reader = new FileReader()
+    const rows = text
+      .split(/\r?\n/)
+      .filter((row) => row.trim() !== '')
 
-    reader.onload = (event) => {
-      const text = event.target?.result as string
-
-      if (!text) return
-
-      const rows = text.split('\\n').slice(1)
-
-      const importedLeads: Lead[] = rows
-        .map((row, index) => {
-          const columns = row.split(',')
-
-          if (columns.length < 8) return null
-
-          return {
-            id: Date.now() + index,
-            firstName: columns[0]?.trim() || '',
-            lastName: columns[1]?.trim() || '',
-            email: columns[2]?.trim() || '',
-            phone: columns[3]?.trim() || '',
-            address: columns[4]?.trim() || '',
-            city: columns[5]?.trim() || '',
-            state: columns[6]?.trim() || '',
-            zip: columns[7]?.trim() || '',
-          }
-        })
-        .filter(Boolean) as Lead[]
-
-      setLeads([...importedLeads, ...leads])
-
-      alert(
-        `${importedLeads.length} leads imported successfully`
-      )
+    if (rows.length <= 1) {
+      alert('No leads found in CSV')
+      return
     }
 
-    reader.readAsText(file)
+    const importedLeads: Lead[] = []
+
+    for (let i = 1; i < rows.length; i++) {
+      const columns = rows[i]
+        .split(',')
+        .map((col) => col.trim())
+
+      if (columns.length < 8) {
+        continue
+      }
+
+      const lead: Lead = {
+        id: Date.now() + i,
+        firstName: columns[0],
+        lastName: columns[1],
+        email: columns[2],
+        phone: columns[3],
+        address: columns[4],
+        city: columns[5],
+        state: columns[6],
+        zip: columns[7],
+      }
+
+      importedLeads.push(lead)
+    }
+
+    if (importedLeads.length === 0) {
+      alert('0 leads imported. Check CSV format.')
+      return
+    }
+
+    setLeads((prev) => [...importedLeads, ...prev])
+
+    alert(
+      `${importedLeads.length} leads imported successfully`
+    )
   }
 
-  return (
-    <div className="p-6 text-white min-h-screen bg-black">
-      <div className="mb-8">
-        <h1 className="text-4xl font-bold">
-          Leads Management
-        </h1>
+  reader.readAsText(file)
+}
 
-        <p className="text-zinc-400 mt-2">
-          Add leads manually or upload CSV files.
-        </p>
-      </div>
 
-      {/* Manual Lead Form */}
-      <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 mb-8">
-        <h2 className="text-2xl font-semibold mb-6">
-          Add New Lead
-        </h2>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <input
-            type="text"
-            name="firstName"
-            placeholder="First Name"
-            value={form.firstName}
-            onChange={handleChange}
-            className="bg-zinc-800 border border-zinc-700 rounded-lg p-3"
-          />
 
-          <input
-            type="text"
-            name="lastName"
-            placeholder="Last Name"
-            value={form.lastName}
-            onChange={handleChange}
-            className="bg-zinc-800 border border-zinc-700 rounded-lg p-3"
-          />
 
-          <input
-            type="email"
-            name="email"
-            placeholder="Email Address"
-            value={form.email}
-            onChange={handleChange}
-            className="bg-zinc-800 border border-zinc-700 rounded-lg p-3"
-          />
 
-          <input
-            type="text"
-            name="phone"
-            placeholder="Phone Number"
-            value={form.phone}
-            onChange={(e) => {
-              const numbersOnly =
-                e.target.value.replace(/\\D/g, '')
-
-              if (numbersOnly.length <= 10) {
-                setForm({
-                  ...form,
-                  phone: numbersOnly,
-                })
-              }
-            }}
-            className="bg-zinc-800 border border-zinc-700 rounded-lg p-3"
-          />
-
-          <input
-            type="text"
-            name="address"
-            placeholder="Address"
-            value={form.address}
-            onChange={handleChange}
-            className="bg-zinc-800 border border-zinc-700 rounded-lg p-3"
-          />
-
-          <input
-            type="text"
-            name="city"
-            placeholder="City"
-            value={form.city}
-            onChange={handleChange}
-            className="bg-zinc-800 border border-zinc-700 rounded-lg p-3"
-          />
-
-          <input
-            type="text"
-            name="state"
-            placeholder="State"
-            value={form.state}
-            onChange={handleChange}
-            className="bg-zinc-800 border border-zinc-700 rounded-lg p-3"
-          />
-
-          <input
-            type="text"
-            name="zip"
-            placeholder="ZIP Code"
-            value={form.zip}
-            onChange={(e) => {
-              const numbersOnly =
-                e.target.value.replace(/\\D/g, '')
-
-              setForm({
-                ...form,
-                zip: numbersOnly,
-              })
-            }}
-            className="bg-zinc-800 border border-zinc-700 rounded-lg p-3"
-          />
-        </div>
-
-        <button
-          onClick={addLead}
-          className="mt-6 bg-white text-black px-6 py-3 rounded-lg font-semibold"
-        >
-          Add Lead
-        </button>
-      </div>
 
       {/* CSV Upload */}
       <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 mb-8">
