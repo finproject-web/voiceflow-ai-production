@@ -1,3 +1,5 @@
+import Link from 'next/link'
+
 export default function DashboardPage() {
   return (
     <div className="p-6 text-white min-h-screen bg-black">
@@ -36,47 +38,47 @@ export default function DashboardPage() {
 
       {/* Dashboard Navigation */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-10">
-        <a
+        <Link
           href="/dashboard/leads"
           className="bg-zinc-900 p-6 rounded-xl border border-zinc-800 hover:border-white transition"
         >
           <h2 className="text-xl font-semibold">Leads</h2>
           <p className="text-zinc-400 mt-2">Manage your leads</p>
-        </a>
+        </Link>
 
-        <a
+        <Link
           href="/dashboard/calls"
           className="bg-zinc-900 p-6 rounded-xl border border-zinc-800 hover:border-white transition"
         >
           <h2 className="text-xl font-semibold">Calls</h2>
           <p className="text-zinc-400 mt-2">View AI calls</p>
-        </a>
+        </Link>
 
-        <a
+        <Link
           href="/dashboard/analytics"
           className="bg-zinc-900 p-6 rounded-xl border border-zinc-800 hover:border-white transition"
         >
           <h2 className="text-xl font-semibold">Analytics</h2>
           <p className="text-zinc-400 mt-2">Track performance</p>
-        </a>
+        </Link>
 
-        <a
+        <Link
           href="/dashboard/settings"
           className="bg-zinc-900 p-6 rounded-xl border border-zinc-800 hover:border-white transition"
         >
           <h2 className="text-xl font-semibold">Settings</h2>
           <p className="text-zinc-400 mt-2">Manage account settings</p>
-        </a>
+        </Link>
       </div>
 
       {/* Add Lead Button */}
       <div className="mt-8">
-        <a
+        <Link
           href="/dashboard/leads"
           className="inline-flex items-center px-6 py-3 bg-white text-black rounded-lg font-semibold"
         >
           Add Lead
-        </a>
+        </Link>
       </div>
     </div>
   )

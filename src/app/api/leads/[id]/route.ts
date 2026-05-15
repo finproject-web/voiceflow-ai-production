@@ -22,6 +22,17 @@ export async function GET(
       )
     }
 
+    // Get user's organization
+    const { data: userData } = await supabase
+      .from('users')
+      .select('organization_id')
+      .eq('id', user.id)
+      .single()
+
+    if (!userData?.organization_id) {
+      return NextResponse.json({ error: 'Organization not found' }, { status: 404 })
+    }
+
     // Get lead details
     const { data: lead, error } = await supabase
       .from('leads')
@@ -33,6 +44,14 @@ export async function GET(
       return NextResponse.json(
         { error: 'Lead not found' },
         { status: 404 }
+      )
+    }
+
+    // Verify lead belongs to user's organization
+    if (lead.organization_id !== userData.organization_id) {
+      return NextResponse.json(
+        { error: 'Forbidden' },
+        { status: 403 }
       )
     }
 
@@ -70,22 +89,34 @@ export async function PUT(
       )
     }
 
+    // Get user's organization
+    const { data: userData } = await supabase
+      .from('users')
+      .select('organization_id')
+      .eq('id', user.id)
+      .single()
+
+    if (!userData?.organization_id) {
+      return NextResponse.json({ error: 'Organization not found' }, { status: 404 })
+    }
+
     // Parse request body
     const body = await request.json()
     const { status, notes } = body
 
-    // Update lead
+    // Update lead (scoped to organization)
     const { data: lead, error } = await supabase
       .from('leads')
       .update({ status, notes, updated_at: new Date().toISOString() })
       .eq('id', id)
+      .eq('organization_id', userData.organization_id)
       .select()
       .single()
     
     if (error || !lead) {
       return NextResponse.json(
-        { error: 'Failed to update lead' },
-        { status: 500 }
+        { error: 'Lead not found or access denied' },
+        { status: error?.code === 'PGRST116' ? 404 : 403 }
       )
     }
 
@@ -123,16 +154,28 @@ export async function DELETE(
       )
     }
 
-    // Delete lead
+    // Get user's organization
+    const { data: userData } = await supabase
+      .from('users')
+      .select('organization_id')
+      .eq('id', user.id)
+      .single()
+
+    if (!userData?.organization_id) {
+      return NextResponse.json({ error: 'Organization not found' }, { status: 404 })
+    }
+
+    // Delete lead (scoped to organization)
     const { error } = await supabase
       .from('leads')
       .delete()
       .eq('id', id)
+      .eq('organization_id', userData.organization_id)
     
     if (error) {
       return NextResponse.json(
-        { error: 'Failed to delete lead' },
-        { status: 500 }
+        { error: 'Lead not found or access denied' },
+        { status: 403 }
       )
     }
 

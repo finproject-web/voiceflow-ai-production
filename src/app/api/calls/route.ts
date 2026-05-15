@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
       .insert({
         organization_id: userData.organization_id,
         lead_id: leadId,
-        phone_number: phone,
+        phone: phone,
         status: 'scheduled',
         ai_assistant_id: assistantId || process.env.VAPI_DEFAULT_ASSISTANT_ID,
         timestamp: new Date().toISOString()

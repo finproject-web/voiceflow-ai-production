@@ -1,0 +1,5 @@
+-- Add missing columns to leads table
+ALTER TABLE leads ADD COLUMN IF NOT EXISTS address TEXT;
+ALTER TABLE leads ADD COLUMN IF NOT EXISTS city TEXT;
+ALTER TABLE leads ADD COLUMN IF NOT EXISTS state TEXT;
+ALTER TABLE leads ADD COLUMN IF NOT EXISTS zip_code TEXT;

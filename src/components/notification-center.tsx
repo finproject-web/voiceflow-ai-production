@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
@@ -85,6 +86,7 @@ interface NotificationCenterProps {
 }
 
 export function NotificationCenter({ organizationId }: NotificationCenterProps) {
+  const router = useRouter()
   const [isOpen, setIsOpen] = useState(false)
   const [showAll, setShowAll] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
@@ -103,10 +105,61 @@ export function NotificationCenter({ organizationId }: NotificationCenterProps) 
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
+  // Add custom animations to global styles
+  useEffect(() => {
+    if (typeof document !== 'undefined') {
+      const style = document.createElement('style')
+      style.textContent = `
+        @keyframes slideInRight {
+          from {
+            opacity: 0;
+            transform: translateX(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(0);
+          }
+        }
+        
+        @keyframes slideInFromTop {
+          from {
+            opacity: 0;
+            transform: translateY(-10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        
+        .animate-in {
+          animation-duration: 200ms;
+          animation-fill-mode: both;
+        }
+        
+        .slide-in-from-top-1 {
+          animation-name: slideInFromTop;
+        }
+        
+        .line-clamp-2 {
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+        }
+      `
+      document.head.appendChild(style)
+      
+      return () => {
+        document.head.removeChild(style)
+      }
+    }
+  }, [])
+
   const handleNotificationClick = (notification: Notification) => {
     markAsRead(notification.id)
     if (notification.action_url) {
-      window.location.href = notification.action_url
+      router.push(notification.action_url)
     }
     setIsOpen(false)
   }
@@ -366,46 +419,3 @@ export function LiveActivityFeed({ organizationId }: { organizationId: string })
     </Card>
   )
 }
-
-// Add custom animations to global styles
-const style = document.createElement('style')
-style.textContent = `
-  @keyframes slideInRight {
-    from {
-      opacity: 0;
-      transform: translateX(20px);
-    }
-    to {
-      opacity: 1;
-      transform: translateX(0);
-    }
-  }
-  
-  @keyframes slideInFromTop {
-    from {
-      opacity: 0;
-      transform: translateY(-10px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-  
-  .animate-in {
-    animation-duration: 200ms;
-    animation-fill-mode: both;
-  }
-  
-  .slide-in-from-top-1 {
-    animation-name: slideInFromTop;
-  }
-  
-  .line-clamp-2 {
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
-`
-document.head.appendChild(style)

@@ -13,6 +13,7 @@ import {
 import { LogOut, Settings, User } from "lucide-react"
 import { createClient } from "@/utils/supabase/client"
 import { useRouter } from "next/navigation"
+import { useState } from "react"
 
 interface HeaderProps {
   user?: {
@@ -25,12 +26,31 @@ interface HeaderProps {
 
 export function Header({ user, children }: HeaderProps) {
   const router = useRouter()
+  const [isSigningOut, setIsSigningOut] = useState(false)
+  const [signOutError, setSignOutError] = useState("")
 
   const handleSignOut = async () => {
-    const supabase = createClient()
-    await supabase.auth.signOut()
-    router.replace("/auth/login")
-    router.refresh()
+    setIsSigningOut(true)
+    setSignOutError("")
+    
+    try {
+      const supabase = createClient()
+      const { error } = await supabase.auth.signOut()
+      
+      if (error) throw error
+      
+      // Clear all Supabase cookies
+      await supabase.auth.signOut({ scope: 'global' })
+      
+      // Navigate to login and refresh to clear session
+      router.replace("/auth/login")
+      router.refresh()
+    } catch (error) {
+      console.error("Sign out error:", error)
+      const errorMessage = error instanceof Error ? error.message : "Failed to sign out"
+      setSignOutError(errorMessage)
+      setIsSigningOut(false)
+    }
   }
 
   return (
@@ -71,9 +91,18 @@ export function Header({ user, children }: HeaderProps) {
                   <span>Settings</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleSignOut}>
+                {signOutError && (
+                  <div className="px-2 py-1 text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 rounded">
+                    {signOutError}
+                  </div>
+                )}
+                <DropdownMenuItem 
+                  onClick={handleSignOut} 
+                  disabled={isSigningOut}
+                  className={isSigningOut ? "opacity-50 cursor-not-allowed" : ""}
+                >
                   <LogOut className="mr-2 h-4 w-4" />
-                  <span>Log out</span>
+                  <span>{isSigningOut ? "Signing out..." : "Log out"}</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

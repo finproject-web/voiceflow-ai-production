@@ -16,6 +16,17 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Get user's organization
+    const { data: userData } = await supabase
+      .from('users')
+      .select('organization_id')
+      .eq('id', user.id)
+      .single()
+
+    if (!userData?.organization_id) {
+      return NextResponse.json({ error: 'Organization not found' }, { status: 404 })
+    }
+
     // Parse request body
     const body = await request.json()
     const { phone, message, leadId } = body
@@ -25,6 +36,23 @@ export async function POST(request: NextRequest) {
         { error: 'Phone and message are required' },
         { status: 400 }
       )
+    }
+
+    // If leadId is provided, verify lead belongs to user's organization
+    if (leadId) {
+      const { data: lead } = await supabase
+        .from('leads')
+        .select('id')
+        .eq('id', leadId)
+        .eq('organization_id', userData.organization_id)
+        .single()
+
+      if (!lead) {
+        return NextResponse.json(
+          { error: 'Lead not found or access denied' },
+          { status: 403 }
+        )
+      }
     }
 
     // For now, just return a success response
@@ -63,8 +91,19 @@ export async function GET(request: NextRequest) {
       )
     }
 
+    // Get user's organization
+    const { data: userData } = await supabase
+      .from('users')
+      .select('organization_id')
+      .eq('id', user.id)
+      .single()
+
+    if (!userData?.organization_id) {
+      return NextResponse.json({ error: 'Organization not found' }, { status: 404 })
+    }
+
     // For now, return empty history
-    // In production, this would fetch from SMS logs table
+    // In production, this would fetch from SMS logs table scoped to organization_id
     return NextResponse.json({
       success: true,
       data: {

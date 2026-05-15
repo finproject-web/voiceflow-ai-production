@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -10,14 +11,26 @@ import { Eye, EyeOff, LogIn } from "lucide-react"
 import { createClient } from "@/utils/supabase/client"
 
 export default function LoginPage() {
+  const router = useRouter()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState("")
+
+  // Check for error in URL on mount
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search)
+    const urlError = urlParams.get('error')
+    if (urlError === 'no_organization') {
+      setError('Your account is not properly set up. Please contact support or sign up again.')
+    }
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
+    setError("")
     
     try {
       const supabase = createClient()
@@ -30,12 +43,110 @@ export default function LoginPage() {
 
       console.log("Login successful:", data)
       
-      // Redirect to dashboard
-      window.location.href = '/dashboard'
+      // Check if user has organization
+      if (data.user) {
+        const { data: userData, error: userError } = await supabase
+          .from('users')
+          .select('organization_id')
+          .eq('id', data.user.id)
+          .single()
+
+        if (userError || !userData?.organization_id) {
+          // Create user record if it doesn't exist
+          if (userError?.code === 'PGRST116') {
+            console.log("User record doesn't exist, creating it...")
+            const { error: insertUserError } = await supabase
+              .from('users')
+              .insert({ id: data.user.id })
+            
+            if (insertUserError) {
+              console.error("Error creating user record:", insertUserError)
+              setError(`Failed to create user record: ${insertUserError.message}`)
+              setIsLoading(false)
+              return
+            }
+          }
+
+          // Create organization for user if they don't have one
+          console.log("User has no organization, creating one...")
+          
+          const businessName = email.split('@')[0]
+          let slug = businessName.toLowerCase().replace(/\s+/g, '-')
+          
+          // Check if organization with this slug already exists
+          const { data: existingOrg } = await supabase
+            .from('organizations')
+            .select('id')
+            .eq('slug', slug)
+            .single()
+
+          let orgId: string
+          
+          if (existingOrg) {
+            // Use existing organization
+            console.log("Organization already exists, using it")
+            orgId = existingOrg.id
+          } else {
+            // Create new organization with unique slug
+            let attempts = 0
+            let orgError = null
+            let org: any = null
+            
+            while (attempts < 5) {
+              const uniqueSlug = attempts === 0 ? slug : `${slug}-${Date.now()}`
+              
+              const result = await supabase
+                .from('organizations')
+                .insert({ name: businessName, slug: uniqueSlug })
+                .select()
+                .single()
+              
+              if (result.error) {
+                orgError = result.error
+                attempts++
+              } else {
+                org = result.data
+                orgError = null
+                break
+              }
+            }
+
+            if (orgError || !org) {
+              console.error("Error creating organization:", orgError)
+              setError(`Failed to create organization: ${orgError?.message || 'Unknown error'}`)
+              setIsLoading(false)
+              return
+            }
+            
+            orgId = org.id
+          }
+
+          // Update user with organization_id
+          const { error: updateError } = await supabase
+            .from('users')
+            .update({ 
+              organization_id: orgId,
+              business_name: businessName 
+            })
+            .eq('id', data.user.id)
+
+          if (updateError) {
+            console.error("Error updating user with organization:", updateError)
+            setError(`Failed to update user: ${updateError.message}`)
+            setIsLoading(false)
+            return
+          }
+        }
+      }
+      
+      // Redirect to dashboard and refresh to update session
+      router.push('/dashboard')
+      router.refresh()
       
     } catch (error) {
       console.error("Login error:", error)
-      // Handle error (show message to user)
+      const errorMessage = error instanceof Error ? error.message : "Invalid email or password"
+      setError(errorMessage)
     } finally {
       setIsLoading(false)
     }
@@ -56,6 +167,11 @@ export default function LoginPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {error && (
+            <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 rounded-md text-sm">
+              {error}
+            </div>
+          )}
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>

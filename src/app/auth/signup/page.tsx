@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -10,6 +11,7 @@ import { Eye, EyeOff, UserPlus, Check, X } from "lucide-react"
 import { createClient } from "@/utils/supabase/client"
 
 export default function SignupPage() {
+  const router = useRouter()
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -91,11 +93,36 @@ export default function SignupPage() {
         throw new Error(`Failed to create user: ${userError.message}`)
       }
 
+      // Create user record in users table
+      if (userData.user) {
+        const { error: userRecordError } = await supabase
+          .from('users')
+          .insert({
+            id: userData.user.id,
+            email: formData.email,
+            organization_id: orgData.id,
+            business_name: formData.businessName,
+            support_email: formData.email,
+          })
+
+        if (userRecordError) {
+          console.error("User record creation error:", userRecordError)
+          throw new Error(`Failed to create user record: ${userRecordError.message}`)
+        }
+      }
+
       console.log("Signup successful:", { userData, orgData })
       
-      // Show success message and redirect
-      alert("Account created successfully! Please check your email to verify your account.")
-      window.location.href = '/auth/login'
+      // Check if email confirmation is required
+      if (userData.user && !userData.user.email_confirmed_at) {
+        // Show success message and redirect to login
+        alert("Account created successfully! Please check your email to verify your account.")
+        router.push('/auth/login')
+      } else {
+        // Auto-login if email confirmation not required
+        router.push('/dashboard')
+        router.refresh()
+      }
       
     } catch (error) {
       console.error("Signup error:", error)

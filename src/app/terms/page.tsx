@@ -1,4 +1,5 @@
 import { Metadata } from 'next'
+import Link from 'next/link'
 
 export const metadata: Metadata = {
   title: 'Terms of Service | VoiceFlow AI',
@@ -63,7 +64,7 @@ export default function TermsPage() {
                 </h2>
                 <p className="text-gray-600 mb-4">
                   Your Privacy Policy will also govern your use of VoiceFlow AI and you can review our 
-                  current Privacy Policy at <a href="/privacy" className="text-blue-600 hover:text-blue-800">/privacy</a>.
+                  current Privacy Policy at <Link href="/privacy" className="text-blue-600 hover:text-blue-800">/privacy</Link>.
                 </p>
               </section>
 
